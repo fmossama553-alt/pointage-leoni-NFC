@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a2a6e">
+<title>Pointage</title>
+<style>
+:root{
+  --blue1:#071f55; --blue2:#0d3a9a; --dot:#4a7be0;
+  --card:#ffffff; --ink:#14213d; --muted:#6b7a99; --line:#e3e9f5;
+  --accent:#ff6a1a; --ok:#2e7d32; --ko:#c62828; --soft:#eef3ff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  color:var(--ink);
+  background:linear-gradient(160deg,var(--blue1) 0%,var(--blue2) 100%) fixed;
+  padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
+}
+#map{position:fixed;inset:0;width:100%;height:100%;z-index:0;opacity:.55;pointer-events:none}
+#app{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:14px 14px 40px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:14px;color:#fff}
+.brand{font-size:26px;font-weight:800;letter-spacing:.5px;flex:1}
+.pill{display:inline-block;background:var(--accent);color:#fff;border-radius:999px;padding:2px 14px;font-weight:700}
+.tag{color:#cfe0ff;font-size:14px;margin:2px 0 14px}
+select,input,button{font:inherit}
+select.lang{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:6px 8px}
+select.lang option{color:#000}
+.btn{border:0;border-radius:12px;padding:11px 16px;font-weight:700;color:#fff;background:#1d5fd6;cursor:pointer}
+.btn.ok{background:var(--ok)} .btn.ko{background:var(--ko)} .btn.gray{background:#546e7a} .btn.acc{background:var(--accent)}
+.btn.ghost{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35)}
+.btn.small{padding:6px 10px;font-size:13px;border-radius:9px}
+.btn:disabled{opacity:.5}
+.card{background:var(--card);border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.login{max-width:420px;margin:40px auto 0}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+input[type=text],input[type=email],input[type=password],input[type=number],input[type=time]{
+  width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+details summary{cursor:pointer;color:var(--muted);margin-top:14px}
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tab{flex:1;text-align:center;padding:10px;border-radius:12px;background:rgba(255,255,255,.15);color:#fff;font-weight:700;cursor:pointer;border:1px solid rgba(255,255,255,.3)}
+.tab.on{background:#fff;color:var(--blue1)}
+.row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .grow{flex:1;min-width:0}
+.row .sub{font-size:13px;color:var(--muted)}
+.chip{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;color:#fff}
+.chip.ok{background:var(--ok)} .chip.ko{background:var(--ko)} .chip.gr{background:#78909c}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--soft);border-radius:14px;padding:10px;text-align:center}
+.stat b{display:block;font-size:20px}
+.stat span{font-size:12px;color:var(--muted)}
+.nav{display:flex;align-items:center;gap:10px;justify-content:space-between;color:#fff;margin-bottom:10px}
+.nav b{font-size:18px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.day.abs{color:var(--ko)} .day.rest{color:var(--muted)}
+.toast{position:fixed;left:0;right:0;top:0;z-index:20;padding:calc(env(safe-area-inset-top,0px) + 14px) 14px 14px;text-align:center;color:#fff;font-weight:700;font-size:17px;display:none}
+.toast.ok{background:var(--ok)} .toast.ko{background:var(--ko)}
+.modal{position:fixed;inset:0;z-index:15;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.modal .card{width:100%;max-width:380px;margin:0}
+.scroll{overflow-x:auto}
+.center{text-align:center;color:#fff}
+</style>
+</head>
+<body>
+<svg id="map" viewBox="0 0 1000 450" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <defs>
+    <pattern id="dots" width="8" height="8" patternUnits="userSpaceOnUse"><circle cx="4" cy="4" r="2.1" fill="#4a7be0"/></pattern>
+    <clipPath id="land"><path d="M33.3,30.0 L55.6,16.7 L111.1,16.7 L152.8,16.7 L236.1,10.0 L277.8,16.7 L327.8,50.0 L347.2,83.3 L316.7,103.3 L291.7,123.3 L275.0,150.0 L277.8,166.7 L250.0,153.3 L230.6,163.3 L230.6,183.3 L255.6,196.7 L269.4,220.0 L283.3,223.3 L261.1,206.7 L236.1,196.7 L208.3,176.7 L188.9,150.0 L175.0,140.0 L155.6,116.7 L155.6,90.0 L125.0,56.7 L83.3,50.0 L41.7,50.0 Z"/><path d="M347.2,50.0 L375.0,50.0 L444.4,16.7 L444.4,-16.7 L333.3,-23.3 L300.0,-10.0 L347.2,23.3 Z"/><path d="M277.8,223.3 L327.8,216.7 L361.1,250.0 L402.8,270.0 L391.7,300.0 L366.7,336.7 L338.9,376.7 L319.4,400.0 L311.1,433.3 L294.4,416.7 L300.0,366.7 L305.6,310.0 L275.0,266.7 Z"/><path d="M452.8,180.0 L472.2,150.0 L483.3,130.0 L527.8,126.7 L588.9,146.7 L597.2,156.7 L619.4,210.0 L641.7,210.0 L611.1,266.7 L611.1,300.0 L597.2,333.3 L575.0,363.3 L550.0,363.3 L533.3,310.0 L525.0,253.3 L477.8,236.7 L452.8,203.3 Z"/><path d="M472.2,130.0 L475.0,106.7 L497.2,96.7 L486.1,90.0 L513.9,76.7 L527.8,66.7 L522.2,56.7 L513.9,43.3 L541.7,20.0 L583.3,13.3 L666.7,16.7 L722.2,6.7 L805.6,-6.7 L888.9,10.0 L972.2,16.7 L1000.0,30.0 L958.3,50.0 L930.6,76.7 L894.4,96.7 L875.0,133.3 L838.9,150.0 L836.1,176.7 L800.0,190.0 L794.4,220.0 L777.8,206.7 L786.1,246.7 L772.2,223.3 L755.6,176.7 L722.2,206.7 L713.9,223.3 L700.0,183.3 L683.3,166.7 L661.1,170.0 L663.9,176.7 L644.4,196.7 L619.4,206.7 L597.2,156.7 L594.4,146.7 L575.0,126.7 L572.2,116.7 L527.8,103.3 L508.3,106.7 L486.1,130.0 Z"/><path d="M816.7,323.3 L838.9,310.0 L861.1,290.0 L880.6,290.0 L894.4,286.7 L905.6,313.3 L925.0,336.7 L916.7,373.3 L891.7,376.7 L863.9,353.3 L819.4,363.3 Z"/><path d="M486.1,83.3 L502.8,80.0 L505.6,73.3 L494.4,56.7 L483.3,56.7 L486.1,70.0 Z"/><path d="M861.1,146.7 L875.0,136.7 L888.9,130.0 L894.4,116.7 L891.7,100.0 L883.3,123.3 L866.7,136.7 Z"/><path d="M763.9,233.3 L791.7,270.0 L819.4,276.7 L833.3,280.0 L805.6,253.3 L777.8,243.3 Z"/><path d="M622.2,333.3 L633.3,300.0 L638.9,300.0 L630.6,333.3 Z"/><path d="M977.8,366.7 L994.4,376.7 L983.3,386.7 L963.9,403.3 L975.0,396.7 Z"/></clipPath>
+  </defs>
+  <rect width="1000" height="450" fill="url(#dots)" clip-path="url(#land)"/>
+</svg>
+<div id="toast" class="toast"></div>
+<div id="app"></div>
+
+<script>
+"use strict";
+var L = {
+ fr:{dir:"ltr",sub:"Suivi de présence des équipes",email:"E-mail",pw:"Mot de passe",login:"Se connecter",server:"Serveur",pid:"Project ID",key:"Web API Key",logout:"Déconnexion",today:"Aujourd'hui",workers:"Travailleurs",add:"+ Ajouter",back:"Retour",name:"Nom",mat:"Matricule",rate:"Taux horaire (DT)",badge:"Badge (UID)",save:"Enregistrer",del:"Supprimer",cancel:"Annuler",present:"Présent",absent:"Absent",rest:"Repos",inn:"Entrée",out:"Sortie",hours:"Heures",earn:"Gains",abs:"Absences",edit_day:"Modifier le jour",clear:"Effacer le jour",saved:"Enregistré ✓",err_login:"E-mail ou mot de passe incorrect ✗",err_net:"Pas d'internet ✗",err_srv:"Erreur serveur ✗",confirm_del:"Supprimer ce travailleur ?",no_workers:"Aucun travailleur",csv:"Exporter CSV",edit_worker:"Modifier",scan:"Scanner (NFC web)",scanning:"Approchez le badge…",scan_na:"NFC web indisponible : saisissez l'UID",need:"Nom et badge obligatoires ✗",used:"Badge déjà utilisé ✗",cur:"DT",h:"h",nopresent:"Présents",none:"Pas encore pointé",cfg:"Renseignez le serveur d'abord ✗"},
+ en:{dir:"ltr",sub:"Team attendance tracking",email:"Email",pw:"Password",login:"Sign in",server:"Server",pid:"Project ID",key:"Web API Key",logout:"Sign out",today:"Today",workers:"Workers",add:"+ Add",back:"Back",name:"Name",mat:"ID number",rate:"Hourly rate (TND)",badge:"Badge (UID)",save:"Save",del:"Delete",cancel:"Cancel",present:"Present",absent:"Absent",rest:"Day off",inn:"In",out:"Out",hours:"Hours",earn:"Earnings",abs:"Absences",edit_day:"Edit day",clear:"Clear day",saved:"Saved ✓",err_login:"Wrong email or password ✗",err_net:"No internet ✗",err_srv:"Server error ✗",confirm_del:"Delete this worker?",no_workers:"No workers yet",csv:"Export CSV",edit_worker:"Edit",scan:"Scan (web NFC)",scanning:"Hold the badge…",scan_na:"Web NFC unavailable: type the UID",need:"Name and badge required ✗",used:"Badge already used ✗",cur:"TND",h:"h",nopresent:"Present",none:"Not clocked in yet",cfg:"Fill in the server first ✗"},
+ ar:{dir:"rtl",sub:"متابعة حضور الفرق",email:"الإيميل",pw:"كلمة السر",login:"دخول",server:"الخادم",pid:"Project ID",key:"Web API Key",logout:"خروج",today:"اليوم",workers:"العمال",add:"+ إضافة",back:"رجوع",name:"الاسم",mat:"الماتريكول",rate:"سعر الساعة (دينار)",badge:"البادج (UID)",save:"حفظ",del:"حذف",cancel:"إلغاء",present:"حاضر",absent:"غائب",rest:"راحة",inn:"الدخول",out:"الخروج",hours:"الساعات",earn:"الأرباح",abs:"الغيابات",edit_day:"تعديل النهار",clear:"مسح النهار",saved:"تم الحفظ ✓",err_login:"الإيميل أو كلمة السر غالطين ✗",err_net:"ما فماش إنترنت ✗",err_srv:"خطأ في الخادم ✗",confirm_del:"تحب تحذف هذا العامل؟",no_workers:"ما فما حتى عامل",csv:"تصدير CSV",edit_worker:"تعديل",scan:"مسح (NFC ويب)",scanning:"قرّب البادج…",scan_na:"NFC ويب موش متوفر: اكتب الـ UID",need:"لازم الاسم والبادج ✗",used:"هذا البادج مستعمل ✗",cur:"د",h:"س",nopresent:"الحاضرين",none:"ما سجّلش بعد",cfg:"عمّر الخادم الأول ✗"}
+};
+var lang = localStorage.getItem("pt_lang") || "ar";
+var cfg = {pid:"",key:""};
+try { cfg = JSON.parse(localStorage.getItem("pt_cfg") || "{}"); } catch(e){}
+cfg.pid = cfg.pid || ""; cfg.key = cfg.key || "";
+var S = {email:"",pw:"",token:"",at:0};
+var V = {view:"login", tab:"today", wid:null, y:0, m:0, workers:[]};
+var $app = document.getElementById("app");
+
+function t(k){ return (L[lang] && L[lang][k]) || L.en[k] || k; }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+function pad(n){ return String(n).padStart(2,"0"); }
+function iso(y,m,d){ return y+"-"+pad(m)+"-"+pad(d); }
+function todayIso(){ var d=new Date(); return iso(d.getFullYear(),d.getMonth()+1,d.getDate()); }
+function nowHM(){ var d=new Date(); return pad(d.getHours())+":"+pad(d.getMinutes()); }
+function f2(x){ return (Math.round(x*100)/100).toFixed(2); }
+function toast(ok,msg){
+  var el=document.getElementById("toast");
+  el.className="toast "+(ok?"ok":"ko"); el.textContent=msg; el.style.display="block";
+  clearTimeout(toast.t); toast.t=setTimeout(function(){el.style.display="none";},3500);
+}
+function fail(e){
+  var m=String(e&&e.message||e);
+  if(m==="login") toast(false,t("err_login"));
+  else if(m==="cfg") toast(false,t("cfg"));
+  else if(/Failed to fetch|NetworkError|Load failed/i.test(m)) toast(false,t("err_net"));
+  else toast(false,t("err_srv")+" "+m);
+}
+
+/* ---------- Firebase REST ---------- */
+async function tok(){
+  if(S.token && Date.now()-S.at<50*60*1000) return S.token;
+  if(!cfg.key) throw new Error("cfg");
+  var r=await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key="+encodeURIComponent(cfg.key),{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({email:S.email,password:S.pw,returnSecureToken:true})});
+  if(!r.ok) throw new Error("login");
+  var j=await r.json(); S.token=j.idToken; S.at=Date.now(); return S.token;
+}
+function base(){ return "https://firestore.googleapis.com/v1/projects/"+encodeURIComponent(cfg.pid)+"/databases/(default)/documents"; }
+async function api(method,url,body){
+  var r=await fetch(url,{method:method,headers:{"Content-Type":"application/json","Authorization":"Bearer "+await tok()},body:body?JSON.stringify(body):undefined});
+  if(r.status===404) return null;
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+function enc(o){ var f={}; Object.keys(o).forEach(function(k){ f[k]={stringValue:String(o[k])}; }); return {fields:f}; }
+function dec(d){ var o={}, f=d.fields||{}; Object.keys(f).forEach(function(k){ o[k]=f[k].stringValue||""; }); o.id=d.name.split("/").pop(); return o; }
+async function listDocs(col){
+  var out=[], pt="";
+  do{
+    var j=await api("GET",base()+"/"+col+"?pageSize=300"+(pt?"&pageToken="+encodeURIComponent(pt):""));
+    ((j&&j.documents)||[]).forEach(function(d){ out.push(dec(d)); });
+    pt=(j&&j.nextPageToken)||"";
+  }while(pt);
+  return out;
+}
+async function queryEq(col,field,val){
+  var j=await api("POST",base()+":runQuery",{structuredQuery:{from:[{collectionId:col}],where:{fieldFilter:{field:{fieldPath:field},op:"EQUAL",value:{stringValue:val}}}}});
+  return (j||[]).filter(function(x){return x.document;}).map(function(x){return dec(x.document);});
+}
+function setDoc(path,o){
+  var m=Object.keys(o).map(function(k){return "updateMask.fieldPaths="+encodeURIComponent(k);}).join("&");
+  return api("PATCH",base()+"/"+path+"?"+m,enc(o));
+}
+function delDoc(path){ return api("DELETE",base()+"/"+path); }
+
+/* ---------- calcul de paie (mêmes règles que l'app) ---------- */
+function toMin(s){ var p=String(s).split(":"); return (+p[0])*60+(+p[1]); }
+function mins(a,b){ var x=toMin(b)-toMin(a); if(x<0) x+=1440; return x; }
+function earn(dateStr,tin,tout,rate){
+  var p=dateStr.split("-").map(Number), dow=new Date(p[0],p[1]-1,p[2]).getDay();
+  var base = dow===6?1.25:(dow===0?1.75:1);
+  var total=mins(tin,tout), s=toMin(tin), sum=0;
+  for(var i=0;i<total;i++){
+    var md=(s+i)%1440, mult=base;
+    if(i>=480) mult=Math.max(mult,1.25);
+    if(md>=1020) mult=Math.max(mult,1.25);
+    sum+=mult/60;
+  }
+  return sum*rate;
+}
+
+/* ---------- vues ---------- */
+function setLang(v){ lang=v; localStorage.setItem("pt_lang",v); render(); }
+function top(showOut){
+  return '<div class="top"><div class="brand">Pointage <span class="pill">Team</span></div>'+
+    '<select class="lang" onchange="setLang(this.value)">'+
+    ['ar','fr','en'].map(function(c){return '<option value="'+c+'"'+(c===lang?' selected':'')+'>'+({ar:'العربية',fr:'Français',en:'English'})[c]+'</option>';}).join("")+
+    '</select>'+(showOut?'<button class="btn ghost small" onclick="logout()">'+t("logout")+'</button>':'')+'</div>';
+}
+function render(){
+  document.documentElement.lang=lang; document.documentElement.dir=L[lang].dir;
+  if(V.view==="login") return viewLogin();
+  if(V.view==="home") return viewHome();
+  if(V.view==="worker") return viewWorker();
+  if(V.view==="form") return viewForm();
+}
+function viewLogin(){
+  $app.innerHTML=top(false)+'<div class="tag">'+t("sub")+'</div>'+
+  '<div class="card login">'+
+   '<label>'+t("email")+'</label><input type="email" id="em" autocomplete="username" value="'+esc(localStorage.getItem("pt_email")||"")+'">'+
+   '<label>'+t("pw")+'</label><input type="password" id="pw" autocomplete="current-password">'+
+   '<details'+(cfg.pid&&cfg.key?'':' open')+'><summary>⚙ '+t("server")+'</summary>'+
+     '<label>'+t("pid")+'</label><input type="text" id="pid" value="'+esc(cfg.pid)+'">'+
+     '<label>'+t("key")+'</label><input type="text" id="key" value="'+esc(cfg.key)+'"></details>'+
+   '<div class="actions"><button class="btn acc" style="flex:1" onclick="doLogin()">'+t("login")+'</button></div>'+
+  '</div>';
+}
+async function doLogin(){
+  cfg.pid=document.getElementById("pid").value.trim(); cfg.key=document.getElementById("key").value.trim();
+  S.email=document.getElementById("em").value.trim(); S.pw=document.getElementById("pw").value; S.token="";
+  localStorage.setItem("pt_cfg",JSON.stringify(cfg)); localStorage.setItem("pt_email",S.email);
+  if(!cfg.pid||!cfg.key){ toast(false,t("cfg")); return; }
+  try{ V.workers=await listDocs("workers"); V.view="home"; V.tab="today"; render(); }catch(e){ fail(e); }
+}
+function logout(){ S={email:"",pw:"",token:"",at:0}; V.view="login"; render(); }
+
+function viewHome(){
+  var h=top(true)+'<div class="tabs"><div class="tab '+(V.tab==="today"?'on':'')+'" onclick="setTab(\'today\')">'+t("today")+'</div>'+
+    '<div class="tab '+(V.tab==="workers"?'on':'')+'" onclick="setTab(\'workers\')">'+t("workers")+'</div></div>'+
+    '<div id="body"><div class="center">…</div></div>';
+  $app.innerHTML=h;
+  if(V.tab==="today") loadToday(); else drawWorkers();
+}
+function setTab(x){ V.tab=x; render(); }
+async function loadToday(){
+  try{
+    var td=todayIso();
+    var ws=await listDocs("workers"); V.workers=ws;
+    var at=await queryEq("attendance","date",td);
+    var by={}; at.forEach(function(a){ by[a.uid]=a; });
+    var dow=new Date().getDay(), weekend=(dow===0||dow===6);
+    var pres=ws.filter(function(w){return by[w.id]&&by[w.id].in;}).length;
+    var rows=ws.slice().sort(function(a,b){return (a.name||"").localeCompare(b.name||"");}).map(function(w){
+      var a=by[w.id], chip, info="";
+      if(a&&a.in){ chip='<span class="chip ok">'+t("present")+'</span>'; info=t("inn")+" "+esc(String(a.in).slice(0,5))+(a.out?" — "+t("out")+" "+esc(String(a.out).slice(0,5)):""); }
+      else if(weekend){ chip='<span class="chip gr">'+t("rest")+'</span>'; }
+      else { chip='<span class="chip ko">'+t("absent")+'</span>'; info=t("none"); }
+      return '<div class="row" onclick="openWorker(\''+esc(w.id)+'\')" style="cursor:pointer"><div class="grow"><b>'+esc(w.name)+'</b><div class="sub">'+esc(w.mat)+(info?' · '+info:'')+'</div></div>'+chip+'</div>';
+    }).join("");
+    document.getElementById("body").innerHTML=
+      '<div class="grid"><div class="stat"><b>'+ws.length+'</b><span>'+t("workers")+'</span></div>'+
+      '<div class="stat"><b>'+pres+'</b><span>'+t("nopresent")+'</span></div>'+
+      '<div class="stat"><b>'+(weekend?0:ws.length-pres)+'</b><span>'+t("absent")+'</span></div></div>'+
+      '<div class="card">'+(rows||'<div class="sub">'+t("no_workers")+'</div>')+'</div>';
+  }catch(e){ fail(e); }
+}
+function drawWorkers(){
+  var ws=V.workers.slice().sort(function(a,b){return (a.name||"").localeCompare(b.name||"");});
+  document.getElementById("body").innerHTML=
+    '<div class="actions" style="margin:0 0 10px"><button class="btn acc" onclick="openForm(null)">'+t("add")+'</button></div>'+
+    '<div class="card">'+(ws.map(function(w){
+      return '<div class="row" onclick="openWorker(\''+esc(w.id)+'\')" style="cursor:pointer"><div class="grow"><b>'+esc(w.name)+'</b><div class="sub">'+t("mat")+': '+esc(w.mat)+' · '+esc(w.rate||"0")+' '+t("cur")+'</div></div><span>›</span></div>';
+    }).join("")||'<div class="sub">'+t("no_workers")+'</div>')+'</div>';
+}
+function openWorker(id){ V.wid=id; var d=new Date(); V.y=d.getFullYear(); V.m=d.getMonth()+1; V.view="worker"; render(); }
+
+var WD={rec:{},rows:[]};
+function shiftMonth(n){ var d=new Date(V.y,V.m-1+n,1); V.y=d.getFullYear(); V.m=d.getMonth()+1; render(); }
+function viewWorker(){
+  var w=V.workers.filter(function(x){return x.id===V.wid;})[0];
+  if(!w){ V.view="home"; return render(); }
+  var mname=new Date(V.y,V.m-1,1).toLocaleDateString(lang==="ar"?"ar-TN":lang,{month:"long",year:"numeric"});
+  $app.innerHTML=top(true)+
+   '<div class="nav"><button class="btn ghost small" onclick="shiftMonth(-1)">‹</button><b>'+esc(w.name)+' — '+esc(mname)+'</b><button class="btn ghost small" onclick="shiftMonth(1)">›</button></div>'+
+   '<div class="grid" id="stats"></div><div class="card scroll" id="days">…</div>'+
+   '<div class="actions"><button class="btn gray" onclick="V.view=\'home\';render()">'+t("back")+'</button>'+
+   '<button class="btn" onclick="openForm(\''+esc(w.id)+'\')">'+t("edit_worker")+'</button>'+
+   '<button class="btn ok" onclick="exportCsv()">'+t("csv")+'</button></div>';
+  loadWorker(w);
+}
+async function loadWorker(w){
+  try{
+    var docs=await queryEq("attendance","uid",w.id);
+    var rec={}; docs.forEach(function(a){ rec[a.date]=a; }); WD.rec=rec;
+    var rate=parseFloat(w.rate)||0, today=todayIso();
+    var first=iso(V.y,V.m,1), start=(w.start&&w.start>first)?w.start:first;
+    var cm=new Date(), isCur=(cm.getFullYear()===V.y&&cm.getMonth()+1===V.m);
+    var last=isCur?new Date(cm.getFullYear(),cm.getMonth(),cm.getDate()):new Date(V.y,V.m,0);
+    var totH=0,totE=0,abs=0,html="",rows=[];
+    for(var d=new Date(last);iso(d.getFullYear(),d.getMonth()+1,d.getDate())>=start;d.setDate(d.getDate()-1)){
+      var ds=iso(d.getFullYear(),d.getMonth()+1,d.getDate()), a=rec[ds];
+      var dn=d.toLocaleDateString(lang==="ar"?"ar-TN":lang,{weekday:"short"}), dow=d.getDay();
+      var cls="", info="";
+      if(a&&a.in){
+        var end=a.out||(ds===today?nowHM():a.in);
+        var hh=mins(a.in,end)/60, ee=earn(ds,a.in,end,rate); totH+=hh; totE+=ee;
+        info=esc(String(a.in).slice(0,5))+" → "+(a.out?esc(String(a.out).slice(0,5)):"…")+" · "+f2(hh)+" "+t("h")+" · "+f2(ee)+" "+t("cur");
+        rows.push([ds,String(a.in).slice(0,5),a.out?String(a.out).slice(0,5):"",f2(hh),f2(ee)]);
+      } else if(ds===today){ info="—"; cls="rest"; }
+      else if(dow===0||dow===6){ info=t("rest"); cls="rest"; }
+      else { info=t("absent"); cls="abs"; abs++; rows.push([ds,"","","0.00","0.00"]); }
+      html+='<div class="row day '+cls+'"><div class="grow"><b>'+d.getDate()+'/'+(d.getMonth()+1)+' '+esc(dn)+'</b><div class="sub">'+info+'</div></div>'+
+        '<button class="btn small gray" onclick="editDay(\''+ds+'\')">✎</button></div>';
+    }
+    WD.rows=rows;
+    document.getElementById("stats").innerHTML=
+      '<div class="stat"><b>'+f2(totH)+'</b><span>'+t("hours")+'</span></div>'+
+      '<div class="stat"><b>'+f2(totE)+'</b><span>'+t("earn")+' ('+t("cur")+')</span></div>'+
+      '<div class="stat"><b>'+abs+'</b><span>'+t("abs")+'</span></div>';
+    document.getElementById("days").innerHTML=html||'<div class="sub">—</div>';
+  }catch(e){ fail(e); }
+}
+function editDay(ds){
+  var a=WD.rec[ds]||{}, m=document.createElement("div"); m.className="modal";
+  m.innerHTML='<div class="card"><b>'+esc(ds)+'</b>'+
+    '<label>'+t("inn")+'</label><input type="time" id="t_in" value="'+esc(String(a.in||"08:00").slice(0,5))+'">'+
+    '<label>'+t("out")+'</label><input type="time" id="t_out" value="'+esc(String(a.out||"16:00").slice(0,5))+'">'+
+    '<div class="actions"><button class="btn ok" id="d_save">'+t("save")+'</button>'+
+    '<button class="btn ko" id="d_clear">'+t("clear")+'</button>'+
+    '<button class="btn gray" id="d_cancel">'+t("cancel")+'</button></div></div>';
+  document.body.appendChild(m);
+  var close=function(){ m.remove(); };
+  m.querySelector("#d_cancel").onclick=close;
+  m.querySelector("#d_save").onclick=async function(){
+    try{
+      await setDoc("attendance/"+V.wid+"_"+ds,{uid:V.wid,date:ds,in:m.querySelector("#t_in").value,out:m.querySelector("#t_out").value});
+      close(); toast(true,t("saved")); render();
+    }catch(e){ fail(e); }
+  };
+  m.querySelector("#d_clear").onclick=async function(){
+    try{ await delDoc("attendance/"+V.wid+"_"+ds); close(); toast(true,t("saved")); render(); }catch(e){ fail(e); }
+  };
+}
+function exportCsv(){
+  var w=V.workers.filter(function(x){return x.id===V.wid;})[0]||{};
+  var lines=["date,in,out,hours,earnings"].concat(WD.rows.slice().reverse().map(function(r){return r.join(",");}));
+  var blob=new Blob(["\ufeff"+lines.join("\n")],{type:"text/csv"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=(w.mat||"worker")+"_"+V.y+"-"+pad(V.m)+".csv"; document.body.appendChild(a); a.click(); a.remove();
+}
+
+function viewForm(){
+  var w=V.workers.filter(function(x){return x.id===V.wid;})[0]||{};
+  var edit=!!V.edit;
+  $app.innerHTML=top(true)+'<div class="card">'+
+    '<label>'+t("name")+'</label><input type="text" id="f_name" value="'+esc(edit?w.name:"")+'">'+
+    '<label>'+t("mat")+'</label><input type="text" id="f_mat" value="'+esc(edit?w.mat:"")+'">'+
+    '<label>'+t("rate")+'</label><input type="number" step="0.001" id="f_rate" value="'+esc(edit?w.rate:"")+'">'+
+    '<label>'+t("badge")+'</label><input type="text" id="f_uid" '+(edit?'readonly':'')+' value="'+esc(edit?w.id:"")+'">'+
+    (edit?'':'<div class="actions"><button class="btn" onclick="scanNfc()">'+t("scan")+'</button></div>')+
+    '<div class="actions"><button class="btn ok" onclick="saveWorker()">'+t("save")+'</button>'+
+    (edit?'<button class="btn ko" onclick="removeWorker()">'+t("del")+'</button>':'')+
+    '<button class="btn gray" onclick="V.view=\''+(edit?'worker':'home')+'\';render()">'+t("cancel")+'</button></div></div>';
+}
+function openForm(id){ V.edit=!!id; V.wid=id||null; V.view="form"; render(); }
+async function scanNfc(){
+  if(!("NDEFReader" in window)){ toast(false,t("scan_na")); return; }
+  try{
+    var r=new NDEFReader(); await r.scan(); toast(true,t("scanning"));
+    r.onreading=function(ev){ var s=(ev.serialNumber||"").replace(/:/g,"").toUpperCase(); if(s){ document.getElementById("f_uid").value=s; toast(true,s); } };
+  }catch(e){ toast(false,t("scan_na")); }
+}
+async function saveWorker(){
+  var name=document.getElementById("f_name").value.trim(), uid=document.getElementById("f_uid").value.trim().toUpperCase().replace(/[^0-9A-F]/g,"");
+  var mat=document.getElementById("f_mat").value.trim(), rate=document.getElementById("f_rate").value.trim().replace(",",".");
+  if(!name||!uid){ toast(false,t("need")); return; }
+  try{
+    if(!V.edit){
+      var ex=await api("GET",base()+"/workers/"+uid);
+      if(ex){ toast(false,t("used")); return; }
+    }
+    var o={name:name,mat:mat,rate:rate}; if(!V.edit) o.start=todayIso();
+    await setDoc("workers/"+uid,o);
+    V.workers=await listDocs("workers"); V.view="home"; V.tab="workers"; render(); toast(true,t("saved"));
+  }catch(e){ fail(e); }
+}
+async function removeWorker(){
+  if(!confirm(t("confirm_del"))) return;
+  try{ await delDoc("workers/"+V.wid); V.workers=await listDocs("workers"); V.view="home"; V.tab="workers"; render(); toast(true,t("saved")); }
+  catch(e){ fail(e); }
+}
+render();
+</script>
+</body>
+</html>
